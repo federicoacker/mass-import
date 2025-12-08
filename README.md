@@ -4,6 +4,14 @@
 
 Stop dragging and dropping files one by one—import entire collections in seconds.
 
+<video src="https://github.com/user-attachments/assets/ad55324a-3063-4516-aa31-7ed71e4b106d" 
+       controls 
+       width="720"
+       autoplay 
+       loop 
+       muted></video>
+
+
 ## 🚀 Key Features
 
 ### 🗺️ Scene Importer
