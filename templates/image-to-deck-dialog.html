@@ -1,132 +1,40 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template Foundry VTT</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .mass-import-dialog {
-          font-family: Arial, sans-serif;
-        }
-
-        .mass-import-dialog .section {
-          border: 1px solid black;
-          width: 100%;
-          margin-bottom: 10px;
-        }
-
-        .mass-import-dialog .section-header {
-          font-weight: bold;
-          background-color: #f0f0f0;
-          color: #000000;
-          border-bottom: 1px solid black;
-          padding: 4px 6px;
-          text-align: center;
-        }
-
-        .mass-import-dialog .section-body {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .mass-import-dialog .row {
-          display: flex;
-          border-bottom: 1px solid black;
-        }
-
-        .mass-import-dialog .row:last-child {
-          border-bottom: none;
-        }
-
-        .mass-import-dialog .cell {
-          border-right: 1px solid black;
-          padding: 4px 6px;
-          text-align: center;
-          vertical-align: middle;
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .mass-import-dialog .cell:last-child {
-          border-right: none;
-        }
-
-        .mass-import-dialog .cell.wide {
-          flex: 4;
-        }
-
-        .mass-import-dialog input[type="text"], 
-        .mass-import-dialog input[type="number"] {
-          width: 90%;
-        }
-
-        .mass-import-dialog .picker-button {
-          padding: 4px 8px;
-          cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <div class="mass-import-dialog">
-        <!-- Folder Path Section -->
-        <div class="section">
-            <div class="section-header">Folder Path</div>
-            <div class="section-body">
-                <div class="row">
-                    <div class="cell wide">
-                        <input name="folder-path" type="text" style="width:100%;">
-                    </div>
-                    <div class="cell">
-                        <button class="picker-button"><i class="fas fa-file-import fa-fw"></i></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card Back Image Section -->
-        <div class="section">
-            <div class="section-header">Card Back Image</div>
-            <div class="section-body">
-                <div class="row">
-                    <div class="cell wide">
-                        <input name="card-back-image" type="text" style="width:100%;">
-                    </div>
-                    <div class="cell">
-                        <button class="card-back-picker-button picker-button"><i class="fas fa-file-import fa-fw"></i></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Deck Configuration Section -->
-        <div class="section">
-            <div class="section-header">Deck Configuration</div>
-            <div class="section-body">
-                <div class="row">
-                    <div class="cell" style="border-right: none; flex: 1;">Deck Name</div>
-                </div>
-                <div class="row">
-                    <div class="cell" style="border-right: none; flex: 1;">
-                        <input type="text" id="deck_name" value="My Deck"/>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="cell">Width</div>
-                    <div class="cell">Height</div>
-                </div>
-                <div class="row">
-                    <div class="cell">
-                        <input type="number" min="50" id="card_width" value="0"/>
-                    </div>
-                    <div class="cell">
-                        <input type="number" min="50" id="grid_height" value="0"/>
-                    </div>
-                </div>
-            </div>
+<div class="mass-import-dialog standard-form">
+    
+    <h3 class="form-header"><i class="fas fa-folder-open"></i> Sources</h3>
+    
+    <div class="form-group">
+        <label>Card Images Folder</label>
+        <div class="form-fields picker-group">
+            <input type="text" name="folder-path" placeholder="Path to card faces">
+            <button type="button" class="picker-button-folder icon"><i class="fas fa-folder"></i></button>
         </div>
     </div>
-</body>
-</html>
+
+    <div class="form-group">
+        <label>Card Back Image</label>
+        <div class="form-fields picker-group">
+            <input type="text" name="card-back-image" placeholder="Path to card back">
+            <button type="button" class="picker-button-image icon"><i class="fas fa-image"></i></button>
+        </div>
+    </div>
+
+    <h3 class="form-header"><i class="fas fa-cards"></i> Deck Configuration</h3>
+    
+    <div class="form-group">
+        <label>Deck Name</label>
+        <div class="form-fields">
+            <input type="text" id="deck_name" value="New Imported Deck">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Card Dimensions (px)</label>
+        <div class="form-fields">
+            <label>W:</label>
+            <input type="number" id="card_width" placeholder="Auto" min="0">
+            <label>H:</label>
+            <input type="number" id="grid_height" placeholder="Auto" min="0">
+        </div>
+        <p class="notes">Leave 0 or empty to use native image size.</p>
+    </div>
+</div>

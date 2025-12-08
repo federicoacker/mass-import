@@ -1,3 +1,14 @@
+0.2.0
+Smart Persistence: Journal Importer now automatically saves and remembers your last configuration settings (path, mode, dimensions, video options).
+
+Strict File Filtering: Importers now strictly filter files based on the selected mode (e.g., PDF mode ignores non-PDF files in the folder) to prevent errors.
+
+Simplified API: Added global MassImport object for easier programmatic access (e.g., MassImport.scene(), MassImport.journal()).
+
+UX Improvements: Renamed Journal Import dropdown options to "Sentence case" for improved readability.
+
+Documentation: Updated README and internal help journal to reflect new feature names and the Macro Launcher instructions
+
 0.1.6
 - small fix
 

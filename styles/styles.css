@@ -1,61 +1,50 @@
-.mass-import-dialog {
-  font-family: Arial, sans-serif;
+.mass-import-dialog .form-group label {
+    font-weight: bold;
+    color: var(--color-text-dark-primary);
 }
 
-.mass-import-dialog .section {
-  border: 1px solid black;
-  width: 100%;
-  margin-bottom: 10px;
+.mass-import-dialog .form-header {
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-border-dark-secondary);
+    color: var(--color-text-dark-primary);
+    font-size: var(--font-size-16);
+    font-family: var(--font-header);
+    padding-bottom: 3px;
+    margin-top: 10px;
 }
 
-.mass-import-dialog .section-header {
-  font-weight: bold;
-  background-color: #f0f0f0;
-  color: #000000;
-  border-bottom: 1px solid black;
-  padding: 4px 6px;
-  text-align: center;
+.mass-import-dialog .form-header:first-child {
+    margin-top: 0;
 }
 
-.mass-import-dialog .section-body {
-  display: flex;
-  flex-direction: column;
+.mass-import-dialog .notes {
+    font-size: var(--font-size-12);
+    color: var(--color-text-dark-secondary);
+    margin-bottom: 5px;
+    font-style: italic;
 }
 
-.mass-import-dialog .row {
-  display: flex;
-  border-bottom: 1px solid black;
+.mass-import-dialog .picker-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.mass-import-dialog .row:last-child {
-  border-bottom: none;
+/* Align checkboxes nicely in row */
+.mass-import-dialog .form-fields label.checkbox {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin: 0;
+    white-space: nowrap;
 }
 
-.mass-import-dialog .cell {
-  border-right: 1px solid black;
-  padding: 4px 6px;
-  text-align: center;
-  vertical-align: middle;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Compact input spacing */
+.mass-import-dialog .form-fields > * {
+    margin-right: 5px;
 }
-
-.mass-import-dialog .cell:last-child {
-  border-right: none;
-}
-
-.mass-import-dialog .cell.wide {
-  flex: 4;
-}
-
-.mass-import-dialog input[type="text"], 
-.mass-import-dialog input[type="number"] {
-  width: 90%;
-}
-
-.mass-import-dialog .picker-button {
-  padding: 4px 8px;
-  cursor: pointer;
+.mass-import-dialog .form-fields > *:last-child {
+    margin-right: 0;
 }

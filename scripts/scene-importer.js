@@ -1,171 +1,126 @@
-import { common } from './common.js'
+import { Common } from './common.js';
 
-export class sceneImporter {
+export class SceneImporter {
 
-  // ---------------------------------------------------------
-  //
-  static async imageToScene() {   
-    const basePath = 'modules/mymaps/animatedmaps/cavern'; // 'modules/mymaps/animatedmaps'
-    
-    const templateData = {basePath: basePath}; 
-    const dialogTemplate = await foundry.applications.handlebars.renderTemplate( `modules/mass-import/templates/image-to-scene-dialog.html`, templateData );                
+  static async imageToScene() {
+    const templatePath = `modules/mass-import/templates/image-to-scene-dialog.html`;
+    const htmlContent = await foundry.applications.handlebars.renderTemplate(templatePath, {});
+
     const sourceData = {
-      activeSource: 'data', // data is default
+      activeSource: 'data',
       activeBucket: '',
       path: ''
-    }
+    };
 
-    // App V2
-    // Configurar o dialog sem usar prompt()
-    const dialogOptions = {
-      window: { 
-        title: "Image Folder To Scene",
-        resizable: true
-      },
-      content: dialogTemplate,
+    // 1. Create Instance
+    const dialog = new foundry.applications.api.DialogV2({
+      window: { title: "Import Images to Scenes", icon: "fas fa-map" },
+      content: htmlContent,
       buttons: [
         {
           action: "create",
-          label: "Create",
+          label: "Create Scenes",
+          icon: "fas fa-check",
           default: true,
-          callback: (event, button, dialog) => {
-            const html = $(dialog.element);
-            this.createScenesFolder(html, sourceData);
+          callback: async (event, button, dialog) => {
+             const html = dialog.element;
+             await SceneImporter.processImport(html, sourceData);
           }
         },
-        {
-          action: "cancel",
-          label: "Cancel"
-        }
+        { action: "cancel", label: "Cancel", icon: "fas fa-times" }
       ]
-    };
-
-    // Criar o dialog
-    const dialog = new foundry.applications.api.DialogV2(dialogOptions);
-    
-    // Hook para configurar listeners após render
-    dialog.addEventListener('render', () => {
-      const html = $(dialog.element);
-      listener(html);
     });
-    
+
+    // 2. Attach Listener explicitly
+    dialog.addEventListener('render', (event) => {
+        const html = dialog.element;
+        // Bind FilePicker
+        Common.bindFilePicker(html, ".picker-button", "input[name='folder-path']", "folder", sourceData);
+        
+        const range = html.querySelector("#grid_alpha");
+        const rangeOut = html.querySelector(".range-value");
+        if(range && rangeOut) range.addEventListener('input', e => rangeOut.textContent = e.target.value);
+    });
+
+    // 3. Render
     dialog.render(true);
-
-    function listener(html) {
-        html.find(".picker-button").on("click", function(e){
-            e.preventDefault();
-            e.stopPropagation();
-            
-            new foundry.applications.apps.FilePicker.implementation({
-                type: "folder",
-                callback: function (path) {
-                  sourceData.activeSource = this.activeSource;
-                  sourceData.activeBucket = this.activeSource==='s3' ? this.sources.s3.bucket : '';
-                  sourceData.path = path;
-                  html.find("input[name=folder-path]").val(path);
-            }}).render(true);
-        });
-    }    
-    
   }
-  
-  // ---------------------------------------------------------
-  //  
-  static async createScenesFolder(html, sourceData) {
-    // const folderPath = html.find("input[name=folder-path]").val();  
-    const folderName = html.find("#folderName")[0].value;  
 
-    const gridType = html.find("select[name=select_grid_type]").val();  
-    const gridAlpha = html.find("input[id=grid_alpha]").val();
-    const gridDistance = html.find("input[id=grid_distance]").val();
-    const gridSize = html.find("input[id=grid_size]").val();
-    const gridUnits = html.find("input[id=grid_units]").val();
-    
-    const navigation = html.find("input[name=select_navigation]")[0].checked;
-    const backgroundColor = html.find("input[id=background_color]").val();
-    const scenePadding = html.find("input[id=scene_padding]").val();
-    
-    const tokenVision = html.find("input[name=token_vision]")[0].checked;
-    const fogExploration = html.find("input[name=fog_exploration]")[0].checked;
+  static async processImport(html, sourceData) {
+    const folderPath = html.querySelector("input[name='folder-path']").value;
+    const folderName = html.querySelector("#folderName").value || "Imported Scenes";
 
-    // Create Folder
-    const createdFolder = await Folder.createDocuments([{name: folderName, type: "Scene"}]);
-    const folderID = createdFolder[0].id;  
-    // let {files} = await FilePicker.browse("data", folderPath);
-
-    console.log('++', sourceData)
-    let {files} = await FilePicker.browse(
-      sourceData.activeSource, 
-      sourceData.path, 
-      { bucket: sourceData.activeBucket || '' });
-
-    const sceneDefaults = {
-      folderID: folderID,
-      gridType: gridType,
-      gridAlpha: gridAlpha,
-      gridDistance: gridDistance,
-      gridUnits: gridUnits,
-      gridSize: gridSize,
-      navigation: navigation,
-      backgroundColor: backgroundColor,
-      scenePadding: scenePadding,
-      tokenVision: tokenVision,
-      fogExploration: fogExploration
-    };
-    
-    for (let imagePath of files) {
-      const myScene = await this.createScene(imagePath, sceneDefaults);
+    if (!folderPath) {
+      ui.notifications.error("Mass Import: Please select a folder path.");
+      return;
     }
-    
-  } 
-  
-  // --------------------------------
-  // Functions
-  // ---------------------------------------------------------
-  //  
-  static async getDimensions(path) {
-    const dimensions={};
-    const texture = await loadTexture(path, {fallback: 'icons/svg/hazard.svg'});
-    dimensions.width = texture.width
-    dimensions.height = texture.height    
-    return dimensions;
+
+    try {
+      let folder = game.folders.find(f => f.name === folderName && f.type === "Scene");
+      if (!folder) {
+        folder = await Folder.create({ name: folderName, type: "Scene" });
+      }
+
+      const browseOptions = { bucket: sourceData.activeBucket || '' };
+      const filesResult = await FilePicker.browse(sourceData.activeSource, folderPath, browseOptions);
+      
+      if (!filesResult.files || filesResult.files.length === 0) {
+        ui.notifications.warn("Mass Import: No files found in the selected folder.");
+        return;
+      }
+
+      const defaults = {
+        folder: folder.id,
+        grid: {
+            type: parseInt(html.querySelector("select[name='select_grid_type']").value),
+            alpha: parseFloat(html.querySelector("#grid_alpha").value),
+            distance: parseFloat(html.querySelector("#grid_distance").value),
+            units: html.querySelector("#grid_units").value,
+            size: parseInt(html.querySelector("#grid_size").value)
+        },
+        navigation: html.querySelector("input[name='select_navigation']").checked,
+        backgroundColor: html.querySelector("#background_color").value,
+        tokenVision: html.querySelector("input[name='token_vision']").checked,
+        fogExploration: html.querySelector("input[name='fog_exploration']").checked
+      };
+
+      ui.notifications.info(`Mass Import: Starting import of ${filesResult.files.length} scenes...`);
+
+      let count = 0;
+      for (const filePath of filesResult.files) {
+        if (!Common.isValidImage(filePath)) continue; 
+        
+        await SceneImporter.createScene(filePath, defaults);
+        count++;
+      }
+
+      ui.notifications.info(`Mass Import: Successfully created ${count} scenes.`);
+
+    } catch (err) {
+      console.error(err);
+      ui.notifications.error("Mass Import: An error occurred. Check console (F12).");
+    }
   }
 
-  // ---------------------------------------------------------
-  //  
-  static async createScene(imagePath, sceneDefaults) {
-    const dimensions = await this.getDimensions(imagePath);
-    const sceneWidth = dimensions.width;
-    const sceneHeight = dimensions.height;    
-  
-    // --------------------------
-    // Scene Optons
-    let data = {
-      name: common.splitPath(imagePath),
-      width: sceneWidth,
-      height: sceneHeight,
-      background: {
-        src: imagePath
-      },
-      grid: {
-        size: sceneDefaults.gridSize,
-        distance: sceneDefaults.gridDistance,
-        units: sceneDefaults.gridUnits,        
-        type: sceneDefaults.gridType,              
-        alpha: sceneDefaults.gridAlpha        
-      },
-      padding: sceneDefaults.scenePadding,      
-      folder: sceneDefaults.folderID,
-      fog: {
-        exploration: sceneDefaults.fogExploration
-      },
-      tokenVision: sceneDefaults.tokenVision,
-      backgroundColor: sceneDefaults.backgroundColor,
-      navigation: sceneDefaults.navigation
+  static async createScene(imagePath, defaults) {
+    const tex = await loadTexture(imagePath);
+    const width = tex.width;
+    const height = tex.height;
+
+    const sceneData = {
+      name: Common.splitPath(imagePath),
+      width: width,
+      height: height,
+      background: { src: imagePath },
+      grid: { ...defaults.grid },
+      padding: 0.25,
+      folder: defaults.folder,
+      fog: { exploration: defaults.fogExploration },
+      tokenVision: defaults.tokenVision,
+      backgroundColor: defaults.backgroundColor,
+      navigation: defaults.navigation
     };
 
-    await Scene.create(data);
+    return await Scene.create(sceneData);
   }
-  
-} // END CLASS
-
+}

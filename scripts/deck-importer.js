@@ -1,156 +1,89 @@
-import { common } from './common.js'
+import { Common } from './common.js';
 
-export class deckImporter {
+export class DeckImporter {
 
-  // ---------------------------------------------------------
-  //
   static async imageToDeck() {
-   
-    const basePath = 'modules/mass-import/WORKSPACE/taroticum'; // 'modules/mymaps/animatedmaps'
+    const templatePath = `modules/mass-import/templates/image-to-deck-dialog.html`;
+    const htmlContent = await foundry.applications.handlebars.renderTemplate(templatePath, {});
     
-    const templateData = {basePath: basePath}; 
-    const dialogTemplate = await foundry.applications.handlebars.renderTemplate( `modules/mass-import/templates/image-to-deck-dialog.html`, templateData );                
-    const sourceData = {
-      activeSource: 'data', // data is default
-      activeBucket: '',
-      path: ''
-    }
-    
-    // App V2
-    const result = await foundry.applications.api.DialogV2.prompt({
-      window: { title: "Image Folder To Deck" },
-      content: dialogTemplate,
-      ok: {
-        label: "Create",
-        callback: (event, button, dialog) => {
-          const html = $(dialog.element); // ← Esta linha resolve o problema
-          this.createDeck(html, sourceData);
-        }
-      },
-      render: (event, dialog) => {
-        const html = $(dialog.element); // ← E esta também
-        listener(html);
-      }
-    });  
-    
-/*
-    new Dialog({
-      title: `Image Folder To Deck`,
-      content: dialogTemplate,
-      buttons: {
-        roll: {
-          label: "Create",
-          callback: (html) => {
-            this.createDeck(html, sourceData);
-          }
-        }, 
-        cancel: {
-          label: "Cancel"
-        }
-      },
-      render: (html) => listener(html)
-    }).render(true);
-*/
-    function listener(html) {
-        html.find(".picker-button").on("click", function() {
-            new foundry.applications.apps.FilePicker.implementation({
-                type: "folder",
-                callback: function (path) {
-                  sourceData.activeSource = this.activeSource;
-                  sourceData.activeBucket = this.activeSource==='s3' ? this.sources.s3.bucket : '';
-                  sourceData.path = path;
-                  html.find("input[name=folder-path]").val(path);
-            }}).render(true);
-        });
-        html.find(".card-back-picker-button").on("click", function() {
-            new foundry.applications.apps.FilePicker.implementation({
-                type: "data",
-                callback: function (path) {
-                  html.find("input[name=card-back-image]").val(path);
-            }}).render(true);
-        });        
-    }    
-    
-  }
-  
-  // ---------------------------------------------------------
-  //  
-  static async createDeck(html, sourceData) {
-    const folderPath = html.find("input[name=folder-path]").val();  
-    const cardBackImage = html.find("input[name=card-back-image]").val();  
-    const deckName = html.find("#deck_name")[0].value;  
-    const cardWidth = html.find("#card_width")[0].value;  
-    const gridHeight = html.find("#grid_height")[0].value;  
-  
-    // 
-    let {files} = await FilePicker.browse(
-      sourceData.activeSource, 
-      sourceData.path, 
-      { bucket: sourceData.activeBucket || '' });
-    
-    //create the empty deck
-    const deck = await Cards.create({
-      name: deckName,
-      type: 'deck',
-    });
-    
-    //map the entry data to the raw card data
-    const rawCardData = files.map((file) => {
-      // file = imagePath and splitPath(file) = image name
-      const imagePath = file;
-      const imageName = common.splitPath(imagePath).capitalize();
+    const sourceData = { activeSource: 'data', activeBucket: '', path: '' };
 
-      if ( cardWidth==0 || gridHeight==0 ) {
-        return {
-          name: imageName,
-          type: 'base',
-          faces: [
-            {
-              img: imagePath,
-              name: imageName,
-            },
-          ],
-          back: {
-            name: '',
-            text: '',
-            img: cardBackImage
-          },      
-          face: 0,
-          origin: deck?.id
-        }; // END RETURN
-      } else {      
-        return {
-          name: imageName,
-          type: 'base',
-          faces: [
-            {
-              img: imagePath,
-              name: imageName,
-            },
-          ],
-          back: {
-            name: '',
-            text: '',
-            img: cardBackImage
-          },      
-          face: 0,
-          origin: deck?.id,
-          width: cardWidth,
-          height: gridHeight        
-        }; // END RETURN
-      } // END ELSE
+    // 1. Create Instance
+    const dialog = new foundry.applications.api.DialogV2({
+      window: { title: "Import Folder to Card Deck", icon: "fas fa-cards" },
+      content: htmlContent,
+      buttons: [
+        {
+          action: "create",
+          label: "Create Deck",
+          default: true,
+          callback: async (event, button, dialog) => {
+            await DeckImporter.processDeck(dialog.element, sourceData);
+          }
+        },
+        { action: "cancel", label: "Cancel" }
+      ]
     });
+
+    // 2. Attach Listener explicitly (This fixes the buttons not working)
+    dialog.addEventListener('render', (event) => {
+        const html = dialog.element;
+        Common.bindFilePicker(html, ".picker-button-folder", "input[name='folder-path']", "folder", sourceData);
+        Common.bindFilePicker(html, ".picker-button-image", "input[name='card-back-image']", "image", null);
+    });
+
+    // 3. Render
+    dialog.render(true);
+  }
+
+  static async processDeck(html, sourceData) {
+    const folderPath = html.querySelector("input[name='folder-path']").value;
+    const backImg = html.querySelector("input[name='card-back-image']").value;
+    const deckName = html.querySelector("#deck_name").value || "My Deck";
     
-    //create the cards in the deck
-    deck?.createEmbeddedDocuments('Card', rawCardData);
-    
-    //open the sheet once we're done
-    deck?.sheet?.render(true);  
-    
-  } 
-  
-  // --------------------------------
-  // Functions
-  // ---------------------------------------------------------
-  
-} // END CLASS
+    let width = parseInt(html.querySelector("#card_width").value);
+    let height = parseInt(html.querySelector("#grid_height").value);
+    if (!width) width = undefined;
+    if (!height) height = undefined;
+
+    if (!folderPath) return ui.notifications.error("Select a folder path!");
+
+    try {
+        const result = await FilePicker.browse(sourceData.activeSource, folderPath, { bucket: sourceData.activeBucket });
+        
+        const deck = await Cards.create({
+            name: deckName,
+            type: "deck",
+            img: backImg || "icons/svg/card-back.svg",
+            width: width,
+            height: height
+        });
+
+        const cardData = result.files
+            .filter(f => Common.isValidImage(f))
+            .map(file => {
+                const name = Common.splitPath(file);
+                return {
+                    name: name,
+                    type: "base",
+                    faces: [{ img: file, name: name }],
+                    back: { img: backImg },
+                    width: width,
+                    height: height,
+                    origin: deck.id
+                };
+            });
+
+        if (cardData.length === 0) return ui.notifications.warn("No images found.");
+
+        await deck.createEmbeddedDocuments("Card", cardData);
+        
+        deck.sheet.render(true);
+        ui.notifications.info(`Created deck "${deckName}" with ${cardData.length} cards.`);
+
+    } catch (e) {
+        console.error(e);
+        ui.notifications.error("Error creating deck.");
+    }
+  }
+}

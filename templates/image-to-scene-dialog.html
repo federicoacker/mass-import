@@ -1,90 +1,80 @@
-<div class="mass-import-dialog">
-  <!-- Folder Path Section -->
-  <div class="section">
-    <div class="section-header">Folder Path</div>
-    <div class="section-body">
-      <div class="row">
-        <div class="cell wide"><input name="folder-path" type="text" style="width: 98%;"></div>
-        <div class="cell"><button type="button" class="picker-button"><i class="fas fa-file-import fa-fw"></i> Browse</button></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Basics Section -->
-  <div class="section">
-    <div class="section-header">Basics</div>
-    <div class="section-body">
-      <div class="row">
-        <div class="cell">Background Color</div>
-        <div class="cell">Folder Name</div>
-      </div>
-      <div class="row">
-        <div class="cell"><input type="text" id="background_color" value="#000000"/></div>
-        <div class="cell"><input type="text" id="folderName" value="Cenas"/></div>
-      </div>
-      <div class="row">
-        <div class="cell">Navigation</div>
-        <div class="cell"></div>
-      </div>
-      <div class="row">
-        <div class="cell"><input type="checkbox" name="select_navigation"></div>
-        <div class="cell"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Grid Section -->
-  <div class="section">
-    <div class="section-header">Grid</div>
-    <div class="section-body">
-      <div class="row">
-        <div class="cell">Alpha</div>
-        <div class="cell">Distance</div>
-      </div>
-      <div class="row">
-        <div class="cell"><input type="range" min="0" max="1" value="0" step="0.01" id="grid_alpha"></div>
-        <div class="cell"><input type="number" min="1" id="grid_distance" value="1"/></div>
-      </div>
-      <div class="row">
-        <div class="cell">Size</div>
-        <div class="cell">Type</div>
-      </div>
-      <div class="row">
-        <div class="cell"><input type="number" min="50" id="grid_size" value="50"/></div>
-        <div class="cell">
-          <select name="select_grid_type">
-            <option value="0">Gridless</option>
-            <option value="1" selected>Square</option>
-            <option value="2">Hexagonal Rows - Odd</option>
-            <option value="3">Hexagonal Rows - Even</option>
-            <option value="4">Hexagonal Columns - Odd</option>        
-            <option value="5">Hexagonal Columns - Even</option>                    
-          </select>    
+<div class="mass-import-dialog standard-form">
+    
+    <h3 class="form-header"><i class="fas fa-folder-open"></i> Source</h3>
+    <div class="form-group">
+        <label>Folder Path</label>
+        <div class="form-fields picker-group">
+            <input type="text" name="folder-path" placeholder="modules/my-module/maps">
+            <button type="button" class="picker-button icon" title="Browse">
+                <i class="fas fa-file-import"></i>
+            </button>
         </div>
-      </div>
-      <div class="row">
-        <div class="cell">Units</div>
-        <div class="cell">Padding</div>
-      </div>
-      <div class="row">
-        <div class="cell"><input type="text" id="grid_units" value="In"/></div>
-        <div class="cell"><input type="range" min="0" max="0.5" value="0" step="0.01" id="scene_padding"></div>
-      </div>
     </div>
-  </div>
 
-  <!-- Lighting Section -->
-  <div class="section">
-    <div class="section-header">Lighting</div>
-    <div class="section-body">
-      <div class="row">
-        <div class="cell">Token Vision</div>
-        <div class="cell">Fog Exploration</div>
-      </div>
-      <div class="row">
-        <div class="cell"><input type="checkbox" name="token_vision"></div>
-        <div class="cell"><input type="checkbox" name="fog_exploration"></div>
-      </div>
+    <h3 class="form-header"><i class="fas fa-cogs"></i> Configuration</h3>
+    <div class="form-group">
+        <label>Target Folder Name</label>
+        <div class="form-fields">
+            <input type="text" id="folderName" value="Imported Scenes">
+        </div>
     </div>
-  </div>
+
+    <!-- Compact Row: Background & Navigation -->
+    <div class="form-group">
+        <label>Display Options</label>
+        <div class="form-fields">
+            <label class="checkbox" title="Background Color">
+                Bg Color <input type="color" id="background_color" value="#000000" style="height: 24px; width: 40px; padding: 0; border: none;">
+            </label>
+            <label class="checkbox" title="Create Scene Navigation">
+                Navigation <input type="checkbox" name="select_navigation">
+            </label>
+        </div>
+    </div>
+
+    <h3 class="form-header"><i class="fas fa-ruler-combined"></i> Grid Settings</h3>
+    
+    <!-- Compact Row: Type & Size -->
+    <div class="form-group">
+        <label>Type & Size</label>
+        <div class="form-fields">
+            <select name="select_grid_type" style="flex: 2">
+                <option value="0">Gridless</option>
+                <option value="1" selected>Square</option>
+                <option value="2">Hex Row-Odd</option>
+                <option value="3">Hex Row-Even</option>
+                <option value="4">Hex Col-Odd</option>        
+                <option value="5">Hex Col-Even</option>     
+            </select>
+            <input type="number" id="grid_size" value="100" min="50" placeholder="Px" style="flex: 1" title="Grid Size (px)">
+        </div>
+    </div>
+
+    <!-- Compact Row: Dist, Units, Alpha -->
+    <div class="form-group">
+        <label>Dimensions</label>
+        <div class="form-fields">
+            <input type="number" id="grid_distance" value="1.5" step="0.5" style="flex: 1" title="Grid Distance">
+            <input type="text" id="grid_units" value="m" style="flex: 1" title="Grid Units">
+            <div style="flex: 2; display: flex; align-items: center; gap: 5px;" title="Grid Opacity">
+                <label style="font-weight: normal; font-size: 0.9em;">Alpha</label>
+                <input type="range" id="grid_alpha" min="0" max="1" step="0.05" value="0.2">
+            </div>
+        </div>
+    </div>
+
+    <h3 class="form-header"><i class="fas fa-lightbulb"></i> Lighting & Vision</h3>
+    
+    <!-- Compact Row: Vision & Fog -->
+    <div class="form-group">
+        <label>Settings</label>
+        <div class="form-fields">
+            <label class="checkbox">
+                Token Vision <input type="checkbox" name="token_vision" checked>
+            </label>
+            <label class="checkbox">
+                Fog Exploration <input type="checkbox" name="fog_exploration" checked>
+            </label>
+        </div>
+    </div>
 </div>

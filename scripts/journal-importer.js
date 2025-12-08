@@ -1,361 +1,235 @@
-import { common } from './common.js'
+import { Common } from './common.js';
 
-export class journalImporter {
+export class JournalImporter {
 
-  // ---------------------------------------------------------
-  //
-  static async imageToJournal() {   
-    const basePath = 'modules/mass-import/WORKSPACE/taroticum'; // 'modules/mymaps/animatedmaps'
-    
-    const templateData = {basePath: basePath}; 
-    const dialogTemplate = await foundry.applications.handlebars.renderTemplate( `modules/mass-import/templates/image-to-journal-dialog.html`, templateData );                
-    const sourceData = {
-      activeSource: 'data', // data is default
-      activeBucket: '',
-      path: ''
-    }
+  static async imageToJournal() {
+    const templatePath = `modules/mass-import/templates/image-to-journal-dialog.html`;
+    const htmlContent = await foundry.applications.handlebars.renderTemplate(templatePath, {});
+    const sourceData = { activeSource: 'data', activeBucket: '', path: '' };
 
-    // App V2
-    // Configurar o dialog sem usar prompt()
-    const dialogOptions = {
-      window: { 
-        title: "Journals",
-        resizable: true
-      },
-      content: dialogTemplate,
+    // 1. Load User Preferences (Defaults if none exist)
+    const savedConfig = game.user.getFlag('mass-import', 'journalConfig') || {};
+    const defaults = foundry.utils.mergeObject({
+        path: '',
+        mode: 0,
+        journalName: 'Mass Import Journal',
+        folderName: 'Mass Import',
+        width: '',
+        height: '',
+        video: { controls: true, loop: true, autoplay: true }
+    }, savedConfig);
+
+    // 2. Create Instance
+    const dialog = new foundry.applications.api.DialogV2({
+      window: { title: "Mass Journal Import", icon: "fas fa-book-open" },
+      content: htmlContent,
       buttons: [
         {
-          action: "create",
-          label: "Create",
+          action: "import",
+          label: "Start Import",
           default: true,
-          callback: (event, button, dialog) => {
-            const html = $(dialog.element);
-            this.createJournal(html, sourceData);
-          }
+          callback: (event, button, dialog) => JournalImporter.dispatchImport(dialog.element, sourceData)
         },
-        {
-          action: "cancel",
-          label: "Cancel"
-        }
+        { action: "cancel", label: "Cancel" }
       ]
-    };
-
-    // Criar o dialog
-    const dialog = new foundry.applications.api.DialogV2(dialogOptions);
-    
-    // Hook para configurar listeners após render
-    dialog.addEventListener('render', () => {
-      const html = $(dialog.element);
-      listener(html);
     });
-    
+
+    // 3. Attach Listener explicitly & Populate Fields
+    dialog.addEventListener('render', (event) => {
+        const html = dialog.element;
+        
+        // Populate inputs with saved defaults
+        if (defaults.path) {
+            html.querySelector("input[name='folder-path']").value = defaults.path;
+            sourceData.path = defaults.path; // update source data context
+        }
+        
+        const modeSelect = html.querySelector("select[name='select_import_type']");
+        if (modeSelect) modeSelect.value = defaults.mode;
+
+        const journalInput = html.querySelector("#journal_name");
+        if (journalInput) journalInput.value = defaults.journalName;
+
+        const folderInput = html.querySelector("#folder_name");
+        if (folderInput) folderInput.value = defaults.folderName;
+
+        const widthInput = html.querySelector("#width_name");
+        if (widthInput) widthInput.value = defaults.width;
+
+        const heightInput = html.querySelector("#height_name");
+        if (heightInput) heightInput.value = defaults.height;
+
+        // Video checkboxes
+        if (html.querySelector("input[name='video_controls']")) 
+            html.querySelector("input[name='video_controls']").checked = defaults.video.controls;
+        if (html.querySelector("input[name='video_loop']")) 
+            html.querySelector("input[name='video_loop']").checked = defaults.video.loop;
+        if (html.querySelector("input[name='video_autoplay']")) 
+            html.querySelector("input[name='video_autoplay']").checked = defaults.video.autoplay;
+
+        // Bind FilePicker
+        Common.bindFilePicker(html, ".picker-button", "input[name='folder-path']", "folder", sourceData);
+    });
+
+    // 4. Render
     dialog.render(true);
+  }
 
-    function listener(html) {
-        html.find(".picker-button").on("click", function(e){
-            e.preventDefault();
-            e.stopPropagation();
-            
-            new foundry.applications.apps.FilePicker.implementation({
-                type: "folder",
-                callback: function (path) {
-                  sourceData.activeSource = this.activeSource;
-                  sourceData.activeBucket = this.activeSource==='s3' ? this.sources.s3.bucket : '';
-                  sourceData.path = path;
-                  html.find("input[name=folder-path]").val(path);
-            }}).render(true);
+  static async dispatchImport(html, sourceData) {
+    const config = JournalImporter.extractConfig(html);
+    if (!config.path) return ui.notifications.error("Path is required.");
+
+    // Save preferences for next time
+    await game.user.setFlag('mass-import', 'journalConfig', config);
+
+    try {
+        const result = await FilePicker.browse(sourceData.activeSource, config.path, { bucket: sourceData.activeBucket });
+        let files = result.files;
+        
+        if (!files.length) return ui.notifications.warn("No files found.");
+
+        // Filter files based on mode to ensure we don't import wrong types
+        if (config.mode === 4) {
+            // PDF Mode
+            files = files.filter(f => Common.isValidPDF(f));
+        } else if (config.mode === 5 || config.mode === 6) {
+            // Video Modes
+            files = files.filter(f => Common.isValidVideo(f));
+        } else {
+            // Image Modes
+            files = files.filter(f => Common.isValidImage(f));
+        }
+
+        if (!files.length) return ui.notifications.warn("No matching files found for the selected mode.");
+
+        let folder = game.folders.find(f => f.name === config.folderName && f.type === "JournalEntry");
+        if (!folder) folder = await Folder.create({ name: config.folderName, type: "JournalEntry" });
+        config.folderId = folder.id;
+
+        ui.notifications.info(`Starting import of ${files.length} items...`);
+
+        switch(config.mode) {
+            case 0: await JournalImporter.createOneJournalWithPages(files, config, "image"); break;
+            case 1: await JournalImporter.createSeparateJournals(files, config, "image"); break;
+            case 2: await JournalImporter.createOneJournalTextGallery(files, config, false); break;
+            case 3: await JournalImporter.createOneJournalTextGallery(files, config, true); break;
+            case 4: await JournalImporter.createOneJournalWithPages(files, config, "pdf"); break;
+            case 5: await JournalImporter.createOneJournalWithPages(files, config, "video"); break;
+            case 6: await JournalImporter.createOneJournalTextGallery(files, config, true, "video"); break;
+            case 7: await JournalImporter.createOneJournalFlexLayout(files, config); break;
+        }
+        ui.notifications.info("Import Complete!");
+
+    } catch (e) {
+        console.error(e);
+        ui.notifications.error("Import failed.");
+    }
+  }
+
+  static extractConfig(html) {
+    return {
+        path: html.querySelector("input[name='folder-path']").value,
+        mode: parseInt(html.querySelector("select[name='select_import_type']").value),
+        journalName: html.querySelector("#journal_name").value,
+        folderName: html.querySelector("#folder_name").value,
+        width: html.querySelector("#width_name").value,
+        height: html.querySelector("#height_name").value,
+        video: {
+            controls: html.querySelector("input[name='video_controls']").checked,
+            loop: html.querySelector("input[name='video_loop']").checked,
+            autoplay: html.querySelector("input[name='video_autoplay']").checked
+        }
+    };
+  }
+
+  // --- Logic Methods ---
+
+  static async createOneJournalWithPages(files, config, type) {
+    const pages = files.map(file => {
+        const name = Common.splitPath(file);
+        const pageData = { name: name, type: type, src: file, title: { show: false } };
+        
+        if (type === 'image') pageData.image = { caption: name };
+        if (type === 'video') pageData.video = config.video;
+        // PDF handles src automatically in pageData
+        
+        return pageData;
+    });
+
+    await JournalEntry.create({
+        name: config.journalName,
+        folder: config.folderId,
+        pages: pages
+    });
+  }
+
+  static async createSeparateJournals(files, config, type) {
+    for (const file of files) {
+        const name = Common.splitPath(file);
+        await JournalEntry.create({
+            name: name,
+            folder: config.folderId,
+            pages: [{
+                name: name,
+                type: type,
+                src: file,
+                image: { caption: name }
+            }]
         });
-    }    
-    
+    }
   }
-  
-  // ---------------------------------------------------------
-  //  
-  static async createJournal(html, sourceData) {
-    const folderName = html.find("input[id=folder_name").val();  
-    const journalName = html.find("input[id=journal_name").val() || '';  
-    // const folderPath = html.find("input[name=folder-path]").val();  
-    const importType = parseInt( html.find("select[name=select_import_type]").val() );  
-    // all images to text
-    const widthName = html.find("input[id=width_name").val();  
-    const heightName = html.find("input[id=height_name").val();  
-    //video
-    const videoVolume = html.find("input[id=video_volume]").val();
-    const videoShowVideoControls = html.find("input[name=video_show_video_controls]")[0].checked;
-    const videoAutoplay = html.find("input[name=video_autoplay]")[0].checked;
-    const videoLoop = html.find("input[name=video_loop]")[0].checked;
-    let journalData = {};
 
-    // Split files
-    let {files} = await FilePicker.browse(
-      sourceData.activeSource, 
-      sourceData.path, 
-      { bucket: sourceData.activeBucket || '' });
-    
-    // Folder
-    const createdFolder = await Folder.createDocuments([{name: folderName, type: "JournalEntry"}]);
-    const folderID = createdFolder[0].id;
-    
-    // Data
-    journalData.journalName = journalName;
-    journalData.folderID = folderID;
-    journalData.widthName = widthName;
-    journalData.heightName = heightName;
-    journalData.videoVolume = videoVolume;
-    journalData.videoShowVideoControls = videoShowVideoControls;
-    journalData.videoLoop = videoLoop;
-    journalData.videoAutoplay = videoAutoplay;
-    
-    /* Import Types
-    0 - Each Image One Page
-    1 - Each Image One Journal Image
-    2 - Each Image One Text Page
-    3 - All Images into Text Page
-    4 - PDF
-    5 - Each Video One Video Page
-    6 - All Video Into One Text Page
-    */
-    switch(importType) {
-      case 0:
-        this.oneImageOnePage(files, journalData);
-        break;
-      case 1:
-        this.oneImageOneJournalImage(files, journalData);        
-        break;           
-      case 2:
-        this.oneImageOneTextPage(files, journalData);        
-        break;           
-      case 3:
-        this.allImagesToOneTextPage(files, journalData);        
-        break;   
-      case 4:
-        this.folderToJournalPDF(files, journalData);        
-        break;   
-      case 5:
-        this.oneVideoOnePage(files, journalData);        
-        break;           
-      case 6:
-        this.allVideoToOneTextPage(files, journalData);        
-        break;          
-      default:
-        // code block
-    }    
-    
-  }   
-  
-  // --------------------------------
-  // Functions
-  // ---------------------------------------------------------
-  
-  // This will create one journal with one image page for each image.
-  static async oneImageOnePage(files, data) {
-    let images = []; 
-    for (let imagePath of files) { 
-      const imageName = common.splitPath(imagePath).capitalize();
-      // 
-      images.push({
-        "name": imageName,
-        "type": "image",
-        "src": imagePath,
-        "title": {
-          "show": false
-        },
-        "image": {
-          "caption": imageName
-        }
-      });
-    }    
-
-    await JournalEntry.create({
-      name: data.journalName,
-      folder: data.folderID,
-      pages: images      
-    });    
-  } // END oneImageOnePage
-
-  // This will create one journal with one text page for each image.
-  static async oneImageOneTextPage(files, data) {
-    let textPages = []; 
-    for (let imagePath of files) { 
-      const imageName = common.splitPath(imagePath).capitalize();
-      let tempsize="";
-      let imageFormated="";
-      if(data.heightName!="" ) {
-        tempsize =  ` height="${data.heightName}"`;
-      }
-      if(data.widthName!="" ) {
-        tempsize = tempsize + ` width="${data.widthName}"`;
-      } 
-
-      imageFormated = `<img src=\"${imagePath}\" ${tempsize}/>`;
+  static async createOneJournalTextGallery(files, config, singlePage, mediaType='image') {
+     let pages = [];
      
-      textPages.push({
-        "name": imageName,
-        "type": "text",
-        "title": {
-          "show": false
-        },
-        "text": {
-          "content": imageFormated
-        }
-      });
-    }    
+     const buildTag = (src) => {
+         let style = "";
+         if (config.width) style += `width:${config.width}px;`;
+         if (config.height) style += `height:${config.height}px;`;
+         
+         if (mediaType === 'video') {
+            return `<video src="${src}" ${style} controls></video>`;
+         }
+         return `<img src="${src}" style="${style}">`;
+     };
 
-    await JournalEntry.create({
-      name: data.journalName,
-      folder: data.folderID,
-      pages: textPages      
-    });    
-  } // END oneImageOneTextPage
+     if (singlePage) {
+         const content = files.map(f => buildTag(f)).join("<br>");
+         pages.push({ name: "Gallery", type: "text", text: { content, format: 1 } });
+     } else {
+         pages = files.map(f => ({
+             name: Common.splitPath(f),
+             type: "text",
+             text: { content: buildTag(f), format: 1 }
+         }));
+     }
 
-  // This will create one journal with one image.
-  static async oneImageOneJournalImage(files, data) {
-    for (let imagePath of files) {
-      var myImage;
-      let imageName = common.splitPath(imagePath).capitalize();
-      myImage = [{
-        "name": imageName,
-        "type": "image",
-        "src": imagePath,
-        "title": {
-          "show": false
-        },
-        "image": {
-          "caption": imageName
-        }
-      }];
-      await JournalEntry.create({
-        name: data.journalName ? `${data.journalName} - ${imageName}` : imageName,
-        folder: data.folderID,
-        pages: myImage      
-      });        
-    }
-  
-  } // END oneImageOnePage
-
-
-  // This will create one journal with one text page with all images.
-  static async allImagesToOneTextPage(files, data) {
-    let images = ``;
-    let pages = [];
-    for (let imagePath of files) {
-      let tempsize="";
-      if(data.heightName!="" ) {
-        tempsize =  ` height="${data.heightName}"`;
-      }
-      if(data.widthName!="" ) {
-        tempsize = tempsize + ` width="${data.widthName}"`;
-      } 
-
-      images = images + `<img src=\"${imagePath}\" ${tempsize}/>`;
-
-    }    
-    
-    pages.push(
-      {
-        "name": 'My Images',
-        "type": "text",
-        "title": {
-          "show": false
-        },
-        "text": {
-          "content": images
-        },        
-      }    
-    );
-    
-    await JournalEntry.create({
-      name: data.journalName,
-      folder: data.folderID,
-      pages: pages      
-    });    
-  } // END oneImageOnePage
-
-  // 
-  static async folderToJournalPDF(files, data) {
-    let images = [];
-    for (let pdfPath of files) {
-      images.push({
-        "name": common.splitPath(pdfPath),
-        "type": "pdf",
-        "src": pdfPath,
-        "title": {
-          "show": false
-        }
-      })
-    }
-
-    await JournalEntry.create({
-      name: data.journalName,
-      folder: data.folderID,
-      pages: images      
-    });       
+     await JournalEntry.create({
+        name: config.journalName,
+        folder: config.folderId,
+        pages: pages
+     });
   }
-  
-  // 
-  static async oneVideoOnePage(files, data) {
-    let images = [];
-    for (let videoPath of files) {
-      images.push({
-        "name": common.splitPath(videoPath),
-        "type": "video",
-        "src": videoPath,
-        "title": {
-          "show": false
-        },
-        "video": {
-          "controls": data.videoShowVideoControls,
-          "volume": data.videoVolume,
-          "loop": data.videoLoop,
-          "autoplay": data.videoAutoplay
-        }      
-      })
-    }    
+
+  static async createOneJournalFlexLayout(files, config) {
+    const itemsHtml = files.map(file => `
+    <div style="flex: 1 1 150px; min-width: 120px; max-width: 200px; height: 150px; overflow: hidden; border: 1px solid #333;">
+        <img src="${file}" style="width: 100%; height: 100%; object-fit: cover; border: none; display: block;">
+    </div>`).join("");
+
+    const content = `
+<div style="display: flex; flex-wrap: wrap; gap: 5px; width: 100%; justify-content: center;">
+${itemsHtml}
+</div>`;
 
     await JournalEntry.create({
-      name: data.journalName,
-      folder: data.folderID,
-      pages: images      
-    });      
-  }    
-    
-  // This will create one journal with one text page with all images.
-  static async allVideoToOneTextPage(files, data) {
-    let videos = ``;
-    let pages = [];
-    for (let imagePath of files) {
-      let tempsize="";
-      if(data.heightName!="" ) {
-        tempsize =  ` height="${data.heightName}"`;
-      }
-      if(data.widthName!="" ) {
-        tempsize = tempsize + ` width="${data.widthName}"`;
-      } 
-
-      videos = videos + `<video ${tempsize} src="${imagePath}" controls></video><p></p>`;
-
-    }    
-    
-    pages.push(
-      {
-        "name": 'My Videos',
-        "type": "text",
-        "title": {
-          "show": false
-        },
-        "text": {
-          "content": videos
-        },        
-      }    
-    );
-    
-    await JournalEntry.create({
-      name: data.journalName,
-      folder: data.folderID,
-      pages: pages      
-    });    
-  } // END oneImageOnePage    
-    
-} // END CLASS
-
-
+        name: config.journalName,
+        folder: config.folderId,
+        pages: [{
+            name: "Flex Gallery",
+            type: "text",
+            text: { content: content, format: 1 }
+        }]
+    });
+  }
+}

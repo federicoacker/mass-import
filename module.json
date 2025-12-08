@@ -1,23 +1,20 @@
-{   
-  "id": "mass-import",   
+{
+  "id": "mass-import",
   "title": "Mass Import Folder",
-  "description": "This module makes easier to import data into the world. It'll read a folder with images, videos or PDFs and turn then into Foundry VTT entities.",   
+  "description": "Import entire folders of images as Scenes, Journals, or Decks effortlessly.",
   "authors": [
     {
       "name": "Mestre Digital",
-      "url": "https://www.youtube.com/c/MestreDigital",
-      "flags": {}
+      "url": "https://www.youtube.com/c/MestreDigital"
     }
   ],
-  "version": "0.1.6",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
   },
-  
-  "scripts": [],  
-	"esmodules": ["./scripts/init.js"],
-
+  "esmodules": ["./scripts/init.js"],
+  "styles": ["styles/styles.css"],
   "packs": [
     {
       "label": "Macros - Mass Import",
@@ -30,9 +27,8 @@
       "type": "JournalEntry",
       "name": "journal-mass-import",
       "path": "packs/journal-mass-import.db"
-    }  
+    }
   ],
-
   "packFolders": [
     {
       "name": "Mass Import Folder",
@@ -44,15 +40,8 @@
       ],
       "folders": []
     }
-  ],
-
-  "styles": ["styles/styles.css"],
-
-  "languages": [
-  ],
-  
+  ],  
   "url": "https://github.com/brunocalado/mass-import",
-  "manifest": "https://raw.githubusercontent.com/brunocalado/mass-import/main/module.json",  
+  "manifest": "https://raw.githubusercontent.com/brunocalado/mass-import/main/module.json",
   "download": "https://codeload.github.com/brunocalado/mass-import/zip/main"
-  
 }

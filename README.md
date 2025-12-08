@@ -1,67 +1,83 @@
-# Folder Mass Import
-This module makes easier to import data into the world. It'll read a folder with images, videos or PDFs and turn then into Foundry VTT entities.
+# Mass Import
 
-## Examples
-- Read a folder with images and make all of them scenes.
-- Read a folder with images and turn all of them into a deck.
-- Read a folder with images and create one page for image.
-- Read a folder with images and create one journal for each image.
-- Read a folder with images and turn all of them into one text page.
-- Read a folder with PDFs and turn into journal pages
-- Read a folder with Videos and turn into journal pages
+**Mass Import** streamlines your world-building process in Foundry VTT. It allows you to select a local folder containing images, videos, or PDFs and automatically converts them into Foundry entities such as Scenes, Journals, or Card Decks.
 
-## Macros    
-<p align="center">
-  <img width="700" src="docs/docs-macros.webp">
-</p>
+Stop dragging and dropping files one by one—import entire collections in seconds.
 
-## Deck Example
-<p align="center">
-  <img width="700" src="docs/docs-example-deck.webp">
-</p>
+## 🚀 Key Features
 
-## Scene Example
-<p align="center">
-  <img width="700" src="docs/docs-example-scene.webp">
-</p>
+### 🗺️ Scene Importer
 
-## Journal Examples
+Turn a folder of map images into configured Scenes instantly.
 
-### Journal Image Example
-<p align="center">
-  <img width="700" src="docs/docs-example-journal-image.webp">
-</p>
+* **Bulk Creation:** Creates one Scene for each image in the folder.
+* **Configuration:** Set grid type, size, background color, and token vision settings once, and apply them to all imported scenes.
 
-### Journal Video Example
-<p align="center">
-  <img width="700" src="docs/docs-example-journal-video.webp">
-</p>
+### 🃏 Deck Importer
 
-### Journal PDF Example
-<p align="center">
-  <img width="700" src="docs/docs-example-journal-pdf.webp">
-</p>
+Perfect for custom tarot decks, playing cards, or item cards.
 
-# Instalation
-You can install this module using the manifest: https://raw.githubusercontent.com/brunocalado/mass-import/main/module.json
+* **Automatic Decks:** Reads a folder of images and creates a fully populated Card Deck.
+* **Custom Backs:** Select a specific image to serve as the card back for the entire deck.
 
-# How To
-After install and activate the module go to the compendiums and search for **Macros - Mass Import**. 
+### 📖 Journal Importer
 
-If you need more information go the the **Journal - Mass Import** and read the journal with instructions in there.
+The most versatile tool for lore, handouts, and assets. Now features **Smart Persistence** (remembers your last settings) and **Strict File Filtering** (only imports the correct file type for the selected mode).
 
-# Community
-- Do you have something to improve this module? [Share it!](https://github.com/brunocalado/mass-import/issues)
-- Do you find out a bug? [Report it!](https://github.com/brunocalado/mass-import/issues)
+* **Image Handling:**
+  * **Images as image page in one journal:** Creates a single journal with one image entry per page.
+  * **Image to page image in one journal:** Creates a separate Journal Entry for each image file.
+  * **Image to one text page in one journal:** Embeds images vertically into standard text pages.
+  * **All images in one text page:** Stacks all images in a single text page.
+  * **All images in one text page side by side:** Creates a responsive, grid-based gallery of all images on a single line/page (Flex Layout).
 
-# V12
-If you need an old version, you need to install manually. Use the [link](https://github.com/brunocalado/mass-import/tree/2a0b5b2330d37e33d27c155702d9271043e67a80)
+* **PDF Support:**
+  * **PDFs: convert to journal pages:** Bulk import PDFs as individual journal pages.
 
-# Changes
-You can see changes at [CHANGELOG](CHANGELOG.md).
+* **Video Support:**
+  * **One video to one video page in one journal:** Import videos as native video pages with autoplay/loop options.
+  * **All videos to one text page in one journal:** Embeds all videos into a single text gallery.
 
-# License and Assets
-- Code license at [LICENSE](LICENSE).
+## 📦 Installation
 
-# Mestre Digital
-About this module creator: https://sites.google.com/view/mestredigitalmodules
+1. Open Foundry VTT and go to the **Add-on Modules** tab.
+2. Click **Install Module**.
+3. Paste the Manifest URL:
+   ```
+   [https://raw.githubusercontent.com/brunocalado/mass-import/main/module.json](https://raw.githubusercontent.com/brunocalado/mass-import/main/module.json)
+   ```
+4. Click **Install**.
+
+## 🛠️ How to Use
+
+### 1. Using the Launcher (Recommended)
+This module includes a **Macros - Mass Import** compendium with ready-to-use macros.
+
+Alternatively, create a script macro with this simple command to open the launcher menu:
+```javascript
+MassImport.showImporters();
+```
+
+### 2. Using the API
+You can also call the importers directly via the browser console or your own scripts using the global `MassImport` object:
+
+```javascript
+MassImport.scene();   // Opens Scene Importer
+MassImport.journal(); // Opens Journal Importer
+MassImport.deck();    // Opens Deck Importer
+```
+
+## 🧰 Included Macros
+Check the **Macros - Mass Import** compendium for these additional utilities:
+
+* **Regenerate Thumbnails:** Allows you to quickly regenerate thumbnails for imported scenes.
+* **Universal Scene Rescaler:** Batch updates the Grid Distance, Grid Units, Light radius, and Sound radius for the current scene in a single click.
+
+## 🤝 Community & Support
+
+* **Suggestions:** Have an idea to improve this module? [Share it here!](https://github.com/brunocalado/mass-import/issues)
+* **Bug Reports:** Found an issue? [Report it here!](https://github.com/brunocalado/mass-import/issues)
+
+## 📜 License
+
+This module is licensed under the [MIT License](LICENSE).
