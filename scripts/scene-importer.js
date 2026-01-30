@@ -12,7 +12,7 @@ export class SceneImporter {
       path: ''
     };
 
-    // --- CARREGAR PREFERÊNCIA SALVA ---
+    // --- LOAD SAVED PREFERENCE ---
     const lastFolder = game.user.getFlag('mass-import', 'lastSceneFolder') || '';
 
     // 1. Create Instance
@@ -38,7 +38,7 @@ export class SceneImporter {
     dialog.addEventListener('render', (event) => {
         const html = dialog.element;
         
-        // --- APLICAR PREFERÊNCIA NO INPUT ---
+        // --- APPLY PREFERENCE TO INPUT ---
         if (lastFolder) {
             const folderInput = html.querySelector("input[name='folder-path']");
             if (folderInput) {
@@ -69,7 +69,7 @@ export class SceneImporter {
     }
 
     try {
-      // --- SALVAR A ÚLTIMA PASTA USADA ---
+      // --- SAVE LAST USED FOLDER ---
       await game.user.setFlag('mass-import', 'lastSceneFolder', folderPath);
 
       // Find or Create Folder
@@ -105,32 +105,53 @@ export class SceneImporter {
         fogExploration: html.querySelector("input[name='fog_exploration']").checked
       };
 
-      ui.notifications.info(`Mass Import: Starting import of ${filesResult.files.length} files...`);
+      // Filter valid files first to get accurate count for progress bar
+      const validFiles = filesResult.files.filter(filePath => 
+          Common.isValidImage(filePath) || Common.isValidVideo(filePath)
+      );
+      const total = validFiles.length;
+
+      if (total === 0) {
+          ui.notifications.warn("Mass Import: No valid images or videos found.");
+          return;
+      }
+
+      // --- PROGRESS BAR START ---
+      // We use the standard ui.notifications here. Foundry will likely spawn parallel
+      // notifications for thumbnail generation, which we are allowing per instructions.
+      const progressNotice = ui.notifications.info(
+          `Mass Import: Starting (0/${total})`, 
+          { progress: true }
+      );
 
       let count = 0;
-      for (const filePath of filesResult.files) {
-        const isImage = Common.isValidImage(filePath);
-        const isVideo = Common.isValidVideo(filePath);
-
-        if (!isImage && !isVideo) continue; 
+      for (let i = 0; i < total; i++) {
+        const filePath = validFiles[i];
         
         try {
             await SceneImporter.createScene(filePath, defaults);
             count++;
         } catch (innerErr) {
-            console.error(`Mass Import | Failed to import ${filePath}:`, innerErr);
+            Common.error(`Failed to import ${filePath}:`, innerErr);
         }
+
+        // Update Progress
+        const percent = (i + 1) / total;
+        progressNotice.update({
+            pct: percent,
+            message: `Mass Import: Processing (${i + 1}/${total})`
+        });
       }
 
-      if (count === 0) {
-          ui.notifications.warn("Mass Import: No valid images or videos were imported.");
-      } else {
-          ui.notifications.info(`Mass Import: Successfully created ${count} scenes.`);
-      }
+      // --- PROGRESS BAR END ---
+      progressNotice.update({
+          pct: 1,
+          message: `Mass Import: ${count} scenes created successfully!`
+      });
 
     } catch (err) {
-      console.error(err);
-      ui.notifications.error("Mass Import: An error occurred. Check console (F12).");
+      Common.error(err);
+      ui.notifications.error("Mass Import: An error occurred. Check console (F12) if debug is enabled.");
     }
   }
 

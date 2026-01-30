@@ -9,8 +9,6 @@ export class JournalImporter {
 
     // 1. Load User Preferences (Defaults if none exist)
     const savedConfig = game.user.getFlag('mass-import', 'journalConfig') || {};
-    
-    // --- O path é carregado aqui via savedConfig ---
     const defaults = foundry.utils.mergeObject({
         path: '',
         mode: 0,
@@ -81,7 +79,7 @@ export class JournalImporter {
     const config = JournalImporter.extractConfig(html);
     if (!config.path) return ui.notifications.error("Path is required.");
 
-    // --- SALVAR A ÚLTIMA PASTA E CONFIGURAÇÃO ---
+    // Save preferences for next time
     await game.user.setFlag('mass-import', 'journalConfig', config);
 
     try {
@@ -126,7 +124,7 @@ export class JournalImporter {
         ui.notifications.info("Import Complete!");
 
     } catch (e) {
-        console.error(e);
+        Common.error(e);
         ui.notifications.error("Import failed.");
     }
   }

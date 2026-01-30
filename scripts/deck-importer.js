@@ -102,11 +102,12 @@ export class DeckImporter {
 
         await deck.createEmbeddedDocuments("Card", cardData);
         
+        // Render sheet but DO NOT show notification as requested
         deck.sheet.render(true);
-        ui.notifications.info(`Created deck "${deckName}" with ${cardData.length} cards.`);
+        // ui.notifications.info(`Created deck "${deckName}" with ${cardData.length} cards.`);
 
     } catch (e) {
-        console.error(e);
+        Common.error(e);
         ui.notifications.error("Error creating deck.");
     }
   }

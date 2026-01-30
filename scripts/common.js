@@ -4,6 +4,31 @@
 export class Common {
   
   /**
+   * Log message to console only if Debug setting is enabled
+   */
+  static log(...args) {
+    // Verifica se o setting existe e está ativo. Usa try-catch para evitar erro antes do init completo.
+    try {
+        if (game.settings.get('mass-import', 'debug')) {
+            console.log("Mass Import |", ...args);
+        }
+    } catch (e) {
+        // Fallback caso chamado antes do init (raro)
+    }
+  }
+
+  /**
+   * Log error to console only if Debug setting is enabled
+   */
+  static error(...args) {
+    try {
+        if (game.settings.get('mass-import', 'debug')) {
+            console.error("Mass Import |", ...args);
+        }
+    } catch (e) {}
+  }
+
+  /**
    * Cleans a file path to return a readable name
    * @param {string} str - The file path
    * @returns {string} The cleaned name
@@ -29,11 +54,11 @@ export class Common {
     const input = html.querySelector(inputSelector);
 
     if (!button) {
-        console.error(`Mass Import | Button not found for selector: ${triggerSelector}`);
+        Common.error(`Button not found for selector: ${triggerSelector}`);
         return;
     }
     if (!input) {
-        console.error(`Mass Import | Input not found for selector: ${inputSelector}`);
+        Common.error(`Input not found for selector: ${inputSelector}`);
         return;
     }
 
@@ -41,7 +66,7 @@ export class Common {
       event.preventDefault();
       event.stopPropagation();
       
-      // V13 FIX: Use namespaced FilePicker instead of global to avoid deprecation warning
+      // V13 FIX: Use namespaced FilePicker
       const FilePickerClass = foundry.applications.apps.FilePicker;
 
       const fp = new FilePickerClass({
@@ -49,7 +74,6 @@ export class Common {
         current: input.value,
         callback: (path) => {
           input.value = path;
-          // Check static property on the correct class
           if (sourceData && FilePickerClass.lastBrowse) {
              sourceData.activeSource = FilePickerClass.lastBrowse.source;
              sourceData.activeBucket = FilePickerClass.lastBrowse.bucket;

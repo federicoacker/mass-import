@@ -1,11 +1,23 @@
 import { DeckImporter } from './deck-importer.js';
 import { JournalImporter } from './journal-importer.js';
 import { SceneImporter } from './scene-importer.js';
+import { Common } from './common.js';
 
 const MODULE_ID = 'mass-import';
 
 Hooks.once('init', () => {
-  console.log(`${MODULE_ID} | Initializing Mass Import Module`);
+  
+  // Register Debug Setting
+  game.settings.register(MODULE_ID, 'debug', {
+    name: 'Debug Mode',
+    hint: 'If enabled, displays log messages and errors in the console (F12).',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
+  Common.log(`Initializing Mass Import Module`);
 
   // Define the API object with direct methods
   const api = {
