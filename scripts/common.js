@@ -7,13 +7,11 @@ export class Common {
    * Log message to console only if Debug setting is enabled
    */
   static log(...args) {
-    // Verifica se o setting existe e está ativo. Usa try-catch para evitar erro antes do init completo.
     try {
         if (game.settings.get('mass-import', 'debug')) {
             console.log("Mass Import |", ...args);
         }
     } catch (e) {
-        // Fallback caso chamado antes do init (raro)
     }
   }
 
@@ -66,9 +64,7 @@ export class Common {
       event.preventDefault();
       event.stopPropagation();
       
-      // V13 FIX: Use namespaced FilePicker
-      const FilePickerClass = foundry.applications.apps.FilePicker;
-
+      const FilePickerClass = foundry.applications.apps.FilePicker.implementation;
       const fp = new FilePickerClass({
         type: type,
         current: input.value,

@@ -83,8 +83,7 @@ export class JournalImporter {
     await game.user.setFlag('mass-import', 'journalConfig', config);
 
     try {
-        // V13 FIX: Use namespaced FilePicker
-        const FilePickerClass = foundry.applications.apps.FilePicker;
+        const FilePickerClass = foundry.applications.apps.FilePicker.implementation;
         const result = await FilePickerClass.browse(sourceData.activeSource, config.path, { bucket: sourceData.activeBucket });
         
         let files = result.files;

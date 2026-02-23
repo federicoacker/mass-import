@@ -29,7 +29,7 @@ export class DeckImporter {
       ]
     });
 
-    // 2. Attach Listener explicitly (This fixes the buttons not working)
+    // 2. Attach Listener explicitly
     dialog.addEventListener('render', (event) => {
         const html = dialog.element;
 
@@ -71,8 +71,7 @@ export class DeckImporter {
         await game.user.setFlag('mass-import', 'lastDeckFolder', folderPath);
         if (backImg) await game.user.setFlag('mass-import', 'lastDeckBackImage', backImg);
 
-        // V13 FIX: Use namespaced FilePicker
-        const FilePickerClass = foundry.applications.apps.FilePicker;
+        const FilePickerClass = foundry.applications.apps.FilePicker.implementation;
         const result = await FilePickerClass.browse(sourceData.activeSource, folderPath, { bucket: sourceData.activeBucket });
         
         const deck = await Cards.create({
@@ -102,9 +101,7 @@ export class DeckImporter {
 
         await deck.createEmbeddedDocuments("Card", cardData);
         
-        // Render sheet but DO NOT show notification as requested
         deck.sheet.render(true);
-        // ui.notifications.info(`Created deck "${deckName}" with ${cardData.length} cards.`);
 
     } catch (e) {
         Common.error(e);

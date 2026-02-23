@@ -1,3 +1,6 @@
+# 0.2.3
+- Switched to foundry.applications.apps.FilePicker.implementation; to work with the forge. https://github.com/brunocalado/mass-import/issues/14
+
 # 0.2.2
 - fix: https://github.com/brunocalado/mass-import/issues/13
 - removed Deprecated warnings

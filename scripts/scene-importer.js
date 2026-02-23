@@ -80,8 +80,7 @@ export class SceneImporter {
 
       const browseOptions = { bucket: sourceData.activeBucket || '' };
       
-      // V13 FIX: Use namespaced FilePicker.browse
-      const FilePickerClass = foundry.applications.apps.FilePicker;
+      const FilePickerClass = foundry.applications.apps.FilePicker.implementation;
       const filesResult = await FilePickerClass.browse(sourceData.activeSource, folderPath, browseOptions);
       
       if (!filesResult.files || filesResult.files.length === 0) {
@@ -117,8 +116,6 @@ export class SceneImporter {
       }
 
       // --- PROGRESS BAR START ---
-      // We use the standard ui.notifications here. Foundry will likely spawn parallel
-      // notifications for thumbnail generation, which we are allowing per instructions.
       const progressNotice = ui.notifications.info(
           `Mass Import: Starting (0/${total})`, 
           { progress: true }
@@ -156,7 +153,6 @@ export class SceneImporter {
   }
 
   static async createScene(filePath, defaults) {
-    // V13 FIX: Use namespaced loadTexture instead of global
     const tex = await foundry.canvas.loadTexture(filePath);
     
     // Safety check for dimensions
