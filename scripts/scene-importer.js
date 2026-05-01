@@ -162,12 +162,13 @@ export class SceneImporter {
     // Safety check for dimensions
     const width = tex.width || 1920; 
     const height = tex.height || 1080;
-
+    filePath=`../../../${filePath}`;
+    console.warn(filePath)
     const sceneData = {
       name: Common.splitPath(filePath),
       width: width,
       height: height,
-      img: filePath ,
+      img: filePath,
       grid: { ...defaults.grid },
       padding: 0,
       folder: defaults.folder,
@@ -177,6 +178,6 @@ export class SceneImporter {
       navigation: defaults.navigation
     };
 
-    return await new Scene(sceneData);
+    return await Scene.create(sceneData);
   }
 }
