@@ -158,27 +158,26 @@ export class SceneImporter {
   }
 
   static async createScene(filePath, defaults) {
-    const texture = await foundry.canvas.loadTexture(filePath);
-    // Safety check for dimensions
-    const width = texture.width || 1920; 
-    const height = texture.height || 1080;
-    console.warn(filePath)
-    const sceneData = {
-      name: Common.splitPath(filePath),
-      width,
-      height,
-      background: {
-        src: texture?.src
-      },
-      grid: { ...defaults.grid },
-      padding: 0,
-      folder: defaults.folder,
-      fog: { exploration: defaults.fogExploration },
-      tokenVision: defaults.tokenVision,
-      backgroundColor: defaults.backgroundColor,
-      navigation: defaults.navigation
-    };
-
-    return await Scene.create(sceneData);
-  }
+  const texture = await foundry.canvas.loadTexture(filePath);
+  // Safety check for dimensions
+  const width = texture.width || 1920; 
+  const height = texture.height || 1080;
+  console.warn(filePath)
+  const sceneData = {
+    name: foundry.audio.AudioHelper.getDefaultSoundName(filePath),
+    width,
+    height,
+    levels: [{
+      name: foundry.audio.AudioHelper.getDefaultSoundName(filePath),
+      background: {src: filePath, color: defaults.backgroundColor ?? "#999999"}
+    }],
+    grid: { ...defaults.grid },
+    padding: 0,
+    folder: defaults.folder,
+    fog: { mode: defaults.fogExploration ?? 1 },
+    tokenVision: defaults.tokenVision ?? false,
+    navigation: defaults.navigation ?? true
+  };
+  return await Scene.create(sceneData);
+}
 }
