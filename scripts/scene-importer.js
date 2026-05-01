@@ -162,13 +162,19 @@ export class SceneImporter {
     // Safety check for dimensions
     const width = tex.width || 1920; 
     const height = tex.height || 1080;
-    filePath=`../../../${filePath}`;
     console.warn(filePath)
     const sceneData = {
       name: Common.splitPath(filePath),
       width: width,
       height: height,
-      img: filePath,
+      background: {
+        src: filePath,
+        offsetX: 0,
+        offsetY: 0,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0
+      },
       grid: { ...defaults.grid },
       padding: 0,
       folder: defaults.folder,
