@@ -159,7 +159,6 @@ export class SceneImporter {
 
   static async createScene(filePath, defaults) {
     const tex = await foundry.canvas.loadTexture(filePath);
-    console.warn(filePath);
     // Safety check for dimensions
     const width = tex.width || 1920; 
     const height = tex.height || 1080;
