@@ -170,7 +170,7 @@ export class SceneImporter {
       height: height,
       img: filePath ,
       grid: { ...defaults.grid },
-      padding: 0.25,
+      padding: 0,
       folder: defaults.folder,
       fog: { exploration: defaults.fogExploration },
       tokenVision: defaults.tokenVision,
@@ -178,6 +178,6 @@ export class SceneImporter {
       navigation: defaults.navigation
     };
 
-    return await Scene.create(sceneData);
+    return await new Scene(sceneData);
   }
 }
