@@ -158,22 +158,17 @@ export class SceneImporter {
   }
 
   static async createScene(filePath, defaults) {
-    const tex = await foundry.canvas.loadTexture(filePath);
+    const texture = await foundry.canvas.loadTexture(filePath);
     // Safety check for dimensions
-    const width = tex.width || 1920; 
-    const height = tex.height || 1080;
+    const width = texture.width || 1920; 
+    const height = texture.height || 1080;
     console.warn(filePath)
     const sceneData = {
       name: Common.splitPath(filePath),
-      width: width,
-      height: height,
+      width,
+      height,
       background: {
-        src: filePath,
-        offsetX: 0,
-        offsetY: 0,
-        scaleX: 1,
-        scaleY: 1,
-        rotation: 0
+        src: texture?.src
       },
       grid: { ...defaults.grid },
       padding: 0,
